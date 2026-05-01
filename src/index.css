@@ -1,0 +1,152 @@
+@import "tailwindcss";
+
+@theme {
+  --color-accent: #007AFF;
+  --color-accent-light: rgba(0, 122, 255, 0.1);
+  --color-green: #34C759;
+  --color-green-light: rgba(52, 199, 89, 0.12);
+  --color-orange: #FF9500;
+  --color-orange-light: rgba(255, 149, 0, 0.12);
+  --color-red: #FF3B30;
+  --color-red-light: rgba(255, 59, 48, 0.1);
+  --color-purple: #AF52DE;
+  --color-purple-light: rgba(175, 82, 222, 0.1);
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  margin: 0;
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.3s, color 0.3s;
+}
+
+/* ── Light (default) ── */
+body {
+  background: linear-gradient(145deg, #f0f2f5 0%, #e4e8ed 50%, #eef0f4 100%);
+  color: #1a1a1a;
+  --surface: rgba(255, 255, 255, 0.72);
+  --surface-inset: rgba(0, 0, 0, 0.03);
+  --border: rgba(0, 0, 0, 0.08);
+  --text-primary: #1a1a1a;
+  --text-secondary: #6b6b6b;
+  --text-tertiary: #999999;
+  --shadow-1: rgba(0,0,0,0.04);
+  --shadow-2: rgba(0,0,0,0.06);
+  --scrollbar: rgba(0,0,0,0.12);
+}
+
+/* ── Dark ── */
+body.dark {
+  background: linear-gradient(145deg, #0e0e10 0%, #16161a 50%, #0e0e10 100%);
+  color: #e4e4e7;
+  --surface: rgba(255, 255, 255, 0.06);
+  --surface-inset: rgba(255, 255, 255, 0.04);
+  --border: rgba(255, 255, 255, 0.08);
+  --text-primary: #e4e4e7;
+  --text-secondary: #9f9fa6;
+  --text-tertiary: #636369;
+  --shadow-1: rgba(0,0,0,0.2);
+  --shadow-2: rgba(0,0,0,0.3);
+  --scrollbar: rgba(255,255,255,0.1);
+}
+
+/* ── Glass card ── */
+.glass {
+  background: var(--surface);
+  backdrop-filter: blur(40px) saturate(1.8);
+  -webkit-backdrop-filter: blur(40px) saturate(1.8);
+  border: 1px solid var(--border);
+  box-shadow:
+    0 0 0 0.5px var(--shadow-1),
+    0 2px 8px var(--shadow-1),
+    0 8px 32px var(--shadow-2);
+}
+
+.glass-inset {
+  background: var(--surface-inset);
+  border: 1px solid var(--border);
+}
+
+/* ── Text colors via CSS vars ── */
+.t-primary { color: var(--text-primary); }
+.t-secondary { color: var(--text-secondary); }
+.t-tertiary { color: var(--text-tertiary); }
+
+/* ── Status pulse ── */
+@keyframes pulse-ring {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+.status-pulse::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  animation: pulse-ring 2s ease-out infinite;
+}
+.status-pulse-green::after { background: var(--color-green); }
+.status-pulse-orange::after { background: var(--color-orange); }
+
+/* ── Animations ── */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fade-up 0.25s ease-out; }
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+.cursor-blink { animation: blink 1s ease-in-out infinite; }
+
+@keyframes breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+.tool-breathe { animation: breathe 1.6s ease-in-out infinite; }
+
+/* Chat popup slide-up */
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.chat-popup-enter {
+  animation: slide-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Overlay fade */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.overlay-enter {
+  animation: fade-in 0.2s ease-out;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 3px; }
+
+/* ── Hidden scrollbar (still scrollable) ── */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; width: 0; height: 0; }
+
+/* ── Timeline line ── */
+.timeline-line { position: relative; }
+.timeline-line::before {
+  content: "";
+  position: absolute;
+  left: 15px;
+  top: 28px;
+  bottom: 0;
+  width: 1.5px;
+  background: var(--border);
+}
+.timeline-line:last-child::before { display: none; }

@@ -1,0 +1,205 @@
+{
+  "id": "hubspot-email-monitor",
+  "label": "HubSpot · Email-monitoring agent",
+  "primary_mcp": { "slug": "hubspot" },
+  "instance_binding": { "kind": "by_name", "name": "Email Monitor Demo" },
+
+  "scenarios": [
+    {
+      "id": "acme-churn",
+      "company": "Acme Logistics",
+      "severity": "red",
+      "tagline": "Churn risk · Contract-Sent deal at $48k closes in 7 days · Open HIGH-priority ticket",
+      "live_query": {
+        "tool": "search_crm_objects",
+        "args": {
+          "objectType": "deals",
+          "limit": 1,
+          "filterGroups": [{ "filters": [{ "propertyName": "dealname", "operator": "CONTAINS_TOKEN", "value": "Acme" }] }],
+          "properties": ["dealname", "amount", "dealstage", "closedate"]
+        }
+      },
+      "render": {
+        "headline": "results[0].properties.dealname",
+        "detail": "results[0].properties.amount",
+        "badge_count": "total"
+      },
+      "trigger": {
+        "message": "INBOUND EMAIL — pretend the following just arrived in the connected mailbox and process it per your directive:\n\nFrom: sarah.chen@acme-logistics.com\nTo: marc-olivier@apteva.local\nSubject: This is the third time I'm asking — board review tomorrow\n\nMarco,\n\nWe're 36 hours away from our board review. The API performance issue is now in the deck. I have not heard a thing back since you said the team was on it five days ago. If we don't have a concrete fix or a written plan by EOD, I'm pulling the renewal off the agenda and we'll evaluate alternatives in Q1.\n\nThis is not what I want. Please call me.\n\nSarah"
+      }
+    },
+
+    {
+      "id": "globex-cold",
+      "company": "Globex Innovations",
+      "severity": "amber",
+      "tagline": "Lost lead · $24k pilot · went silent after demo, kickoff cancelled",
+      "live_query": {
+        "tool": "search_crm_objects",
+        "args": {
+          "objectType": "deals",
+          "limit": 1,
+          "filterGroups": [{ "filters": [{ "propertyName": "dealname", "operator": "CONTAINS_TOKEN", "value": "Globex" }] }],
+          "properties": ["dealname", "amount", "dealstage", "closedate"]
+        }
+      },
+      "render": {
+        "headline": "results[0].properties.dealname",
+        "detail": "results[0].properties.amount",
+        "badge_count": "total"
+      },
+      "trigger": {
+        "message": "INBOUND EMAIL — pretend the following just arrived in the connected mailbox and process it per your directive:\n\nFrom: david.park@globex-innovations.com\nTo: marc-olivier@apteva.local\nSubject: Globex pilot — we need to push to next quarter\n\nHi Marco,\n\nApologies for the radio silence. We've had to deprioritize new initiatives until the security review wraps up internally. Let's plan to revisit the pilot in Q1. I'll reach back out then.\n\nThanks,\nDavid"
+      }
+    },
+
+    {
+      "id": "initech-conflict",
+      "company": "Initech Corp",
+      "severity": "amber",
+      "tagline": "Internal pricing conflict · $120k Decision-Maker-Bought-In deal · committee deadline",
+      "live_query": {
+        "tool": "search_crm_objects",
+        "args": {
+          "objectType": "deals",
+          "limit": 1,
+          "filterGroups": [{ "filters": [{ "propertyName": "dealname", "operator": "CONTAINS_TOKEN", "value": "Initech" }] }],
+          "properties": ["dealname", "amount", "dealstage", "closedate"]
+        }
+      },
+      "render": {
+        "headline": "results[0].properties.dealname",
+        "detail": "results[0].properties.amount",
+        "badge_count": "total"
+      },
+      "trigger": {
+        "message": "INBOUND EMAIL — pretend the following just arrived in the connected mailbox and process it per your directive:\n\nFrom: lisa.rodriguez@initech-corp.com\nTo: marc-olivier@apteva.local\nSubject: Re: Pricing — final ask before committee\n\nMarco,\n\nI'm now in receipt of three different per-seat numbers from your team. Last call yesterday I confirmed $200; this morning's signed proposal said $250; and a different colleague just emailed $225 in a footnote.\n\nI cannot bring this to committee tomorrow without one consistent number in writing, on company letterhead, owned by one named person. If I don't have that by 6pm, the decision goes to next quarter and I'll tell my CFO we couldn't get a straight answer.\n\nLisa"
+      }
+    }
+  ],
+
+  "seed": {
+    "steps": [
+      {
+        "id": "seed-companies",
+        "label": "Create 3 companies",
+        "tool": "manage_crm_objects",
+        "args": {
+          "confirmationStatus": "CONFIRMATION_WAIVED_FOR_SESSION",
+          "createRequest": {
+            "objects": [
+              { "objectType": "companies", "properties": { "name": "Acme Logistics", "domain": "acme-logistics.com", "industry": "TRANSPORTATION_TRUCKING_RAILROAD", "numberofemployees": "250", "city": "Chicago", "country": "United States", "lifecyclestage": "customer", "description": "Mid-market freight + last-mile logistics provider. Apteva customer since 2024." } },
+              { "objectType": "companies", "properties": { "name": "Globex Innovations", "domain": "globex-innovations.com", "industry": "COMPUTER_SOFTWARE", "numberofemployees": "80", "city": "Austin", "country": "United States", "lifecyclestage": "opportunity", "description": "B2B SaaS for asset tracking. In active eval — booked demo two weeks ago." } },
+              { "objectType": "companies", "properties": { "name": "Initech Corp", "domain": "initech-corp.com", "industry": "FINANCIAL_SERVICES", "numberofemployees": "450", "city": "New York", "country": "United States", "lifecyclestage": "opportunity", "description": "Enterprise finance ops. Late-stage deal, multiple stakeholders involved." } }
+            ]
+          }
+        },
+        "capture": [
+          { "as": "acme_id",    "field": "createResults.results[object.displayName=='Acme Logistics'].objectId" },
+          { "as": "globex_id",  "field": "createResults.results[object.displayName=='Globex Innovations'].objectId" },
+          { "as": "initech_id", "field": "createResults.results[object.displayName=='Initech Corp'].objectId" }
+        ]
+      },
+      {
+        "id": "seed-contacts",
+        "label": "Create 5 contacts",
+        "tool": "manage_crm_objects",
+        "args": {
+          "confirmationStatus": "CONFIRMATION_WAIVED_FOR_SESSION",
+          "createRequest": {
+            "objects": [
+              { "objectType": "contacts", "properties": { "email": "sarah.chen@acme-logistics.com", "firstname": "Sarah", "lastname": "Chen", "jobtitle": "VP Operations", "phone": "+1-312-555-0142", "lifecyclestage": "customer" }, "associations": [{ "targetObjectId": "${acme_id}", "targetObjectType": "COMPANY" }] },
+              { "objectType": "contacts", "properties": { "email": "marcus.hayes@acme-logistics.com", "firstname": "Marcus", "lastname": "Hayes", "jobtitle": "IT Director", "lifecyclestage": "customer" }, "associations": [{ "targetObjectId": "${acme_id}", "targetObjectType": "COMPANY" }] },
+              { "objectType": "contacts", "properties": { "email": "david.park@globex-innovations.com", "firstname": "David", "lastname": "Park", "jobtitle": "CTO", "phone": "+1-512-555-0287", "lifecyclestage": "opportunity" }, "associations": [{ "targetObjectId": "${globex_id}", "targetObjectType": "COMPANY" }] },
+              { "objectType": "contacts", "properties": { "email": "lisa.rodriguez@initech-corp.com", "firstname": "Lisa", "lastname": "Rodriguez", "jobtitle": "CFO", "phone": "+1-212-555-0419", "lifecyclestage": "opportunity" }, "associations": [{ "targetObjectId": "${initech_id}", "targetObjectType": "COMPANY" }] },
+              { "objectType": "contacts", "properties": { "email": "tom.bennett@initech-corp.com", "firstname": "Tom", "lastname": "Bennett", "jobtitle": "Procurement Lead", "lifecyclestage": "opportunity" }, "associations": [{ "targetObjectId": "${initech_id}", "targetObjectType": "COMPANY" }] }
+            ]
+          }
+        },
+        "capture": [
+          { "as": "sarah_id", "field": "createResults.results[object.displayName=='Sarah Chen'].objectId" },
+          { "as": "david_id", "field": "createResults.results[object.displayName=='David Park'].objectId" },
+          { "as": "lisa_id",  "field": "createResults.results[object.displayName=='Lisa Rodriguez'].objectId" }
+        ]
+      },
+      {
+        "id": "seed-deals",
+        "label": "Create 3 deals",
+        "tool": "manage_crm_objects",
+        "args": {
+          "confirmationStatus": "CONFIRMATION_WAIVED_FOR_SESSION",
+          "createRequest": {
+            "objects": [
+              { "objectType": "deals", "properties": { "dealname": "Acme Q4 Renewal", "amount": "48000", "dealstage": "contractsent", "pipeline": "default" }, "associations": [{ "targetObjectId": "${acme_id}", "targetObjectType": "COMPANY" }, { "targetObjectId": "${sarah_id}", "targetObjectType": "CONTACT" }] },
+              { "objectType": "deals", "properties": { "dealname": "Globex Pilot Implementation", "amount": "24000", "dealstage": "presentationscheduled", "pipeline": "default" }, "associations": [{ "targetObjectId": "${globex_id}", "targetObjectType": "COMPANY" }, { "targetObjectId": "${david_id}", "targetObjectType": "CONTACT" }] },
+              { "objectType": "deals", "properties": { "dealname": "Initech Enterprise License", "amount": "120000", "dealstage": "decisionmakerboughtin", "pipeline": "default" }, "associations": [{ "targetObjectId": "${initech_id}", "targetObjectType": "COMPANY" }, { "targetObjectId": "${lisa_id}", "targetObjectType": "CONTACT" }] }
+            ]
+          }
+        }
+      },
+      {
+        "id": "seed-tickets",
+        "label": "Create 2 tickets",
+        "tool": "manage_crm_objects",
+        "args": {
+          "confirmationStatus": "CONFIRMATION_WAIVED_FOR_SESSION",
+          "createRequest": {
+            "objects": [
+              { "objectType": "tickets", "properties": { "subject": "Slow API response times — affecting overnight runs", "content": "Acme reports API p95 latency above 4s for 10 days. Two follow-ups, no resolution.", "hs_pipeline": "0", "hs_pipeline_stage": "1", "hs_ticket_priority": "HIGH" }, "associations": [{ "targetObjectId": "${acme_id}", "targetObjectType": "COMPANY" }, { "targetObjectId": "${sarah_id}", "targetObjectType": "CONTACT" }] },
+              { "objectType": "tickets", "properties": { "subject": "Initech — quote clarification on enterprise license terms", "content": "Lisa flagged that the per-seat number in the proposal differs from what was quoted on the call last week.", "hs_pipeline": "0", "hs_pipeline_stage": "1", "hs_ticket_priority": "MEDIUM" }, "associations": [{ "targetObjectId": "${initech_id}", "targetObjectType": "COMPANY" }, { "targetObjectId": "${lisa_id}", "targetObjectType": "CONTACT" }] }
+            ]
+          }
+        }
+      }
+    ]
+  },
+
+  "reset": {
+    "steps": [
+      {
+        "id": "find-deals",
+        "label": "Find demo deals",
+        "tool": "search_crm_objects",
+        "args": {
+          "objectType": "deals",
+          "limit": 50,
+          "filterGroups": [{ "filters": [{ "propertyName": "dealname", "operator": "IN", "values": ["Acme Q4 Renewal", "Globex Pilot Implementation", "Initech Enterprise License"] }] }]
+        },
+        "capture": [{ "as": "deal_ids", "field": "results[].id" }]
+      },
+      {
+        "id": "find-tickets",
+        "label": "Find demo tickets",
+        "tool": "search_crm_objects",
+        "args": {
+          "objectType": "tickets",
+          "limit": 50,
+          "filterGroups": [{ "filters": [{ "propertyName": "subject", "operator": "IN", "values": ["Slow API response times — affecting overnight runs", "Initech — quote clarification on enterprise license terms"] }] }]
+        },
+        "capture": [{ "as": "ticket_ids", "field": "results[].id" }]
+      },
+      {
+        "id": "find-contacts",
+        "label": "Find demo contacts",
+        "tool": "search_crm_objects",
+        "args": {
+          "objectType": "contacts",
+          "limit": 50,
+          "filterGroups": [{ "filters": [{ "propertyName": "email", "operator": "IN", "values": ["sarah.chen@acme-logistics.com", "marcus.hayes@acme-logistics.com", "david.park@globex-innovations.com", "lisa.rodriguez@initech-corp.com", "tom.bennett@initech-corp.com"] }] }]
+        },
+        "capture": [{ "as": "contact_ids", "field": "results[].id" }]
+      },
+      {
+        "id": "find-companies",
+        "label": "Find demo companies",
+        "tool": "search_crm_objects",
+        "args": {
+          "objectType": "companies",
+          "limit": 50,
+          "filterGroups": [{ "filters": [{ "propertyName": "domain", "operator": "IN", "values": ["acme-logistics.com", "globex-innovations.com", "initech-corp.com"] }] }]
+        },
+        "capture": [{ "as": "company_ids", "field": "results[].id" }]
+      }
+    ]
+  }
+}

@@ -1,0 +1,69 @@
+schema: apteva-app/v1
+
+name: demo
+display_name: Demo Runner
+version: 0.1.0
+description: |
+  Client-facing demo runner for Apteva agents. One screen showing
+  business-state cards (companies, deals, tickets, recent emails)
+  pulled live from the agent's connected MCP servers, plus operator
+  controls to seed/reset test data and trigger scripted scenarios.
+  Includes a chat dock so a client can ask the agent live questions
+  without leaving the demo screen. Every demo (HubSpot email-monitor,
+  Salesforce pipeline, etc.) is one JSON profile under src/demos/ —
+  add a profile, no UI code change.
+
+author: Apteva
+homepage: https://github.com/apteva/demo
+icon: https://raw.githubusercontent.com/apteva/demo/main/icon.png
+tags: [ui, demo, kiosk, sales]
+
+scopes: [project, global]
+min_apteva_version: "0.10.0"
+
+# Static UI app contributes only assets — no MCP tools, no custom
+# HTTP routes, no DB schema. Apteva-server mounts dist/ on its own
+# HTTP mux at the configured prefix; runtime config (mount path,
+# default project, optional kiosk API key, demo profile) is injected
+# into index.html at request time.
+provides:
+  ui_app:
+    domain_template: ""
+    mount_path: /demo
+    auth: platform
+    branding:
+      title_template: "{name} · Demo"
+      logo: ""
+      theme_css: ""
+
+runtime:
+  kind: static
+  static_dir: dist
+  source:
+    repo: github.com/apteva/demo
+    ref: main
+
+config_schema:
+  - name: mount_path
+    type: text
+    default: /demo
+    label: URL prefix
+    description: Where the demo app is reachable on the server.
+  - name: default_profile
+    type: text
+    default: hubspot-email-monitor
+    label: Default demo profile
+    description: |
+      Filename (without .json) under src/demos/ to load on first
+      open. Operator can switch via the dropdown in-app. URL param
+      ?demo=<id> overrides this.
+  - name: kiosk_api_key
+    type: password
+    default: ""
+    label: Kiosk API key (optional)
+    description: |
+      When set, the page authenticates with this key and skips the
+      login screen — for shared screens at client meetings or
+      partner portals. Leave blank to require operator login.
+
+upgrade_policy: auto-patch
