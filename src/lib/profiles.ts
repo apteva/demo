@@ -1,61 +1,83 @@
-// Demo profile loader. Profiles live as JSON files in src/demos/ and
-// are bundled into the build (bun's import attribute = "json"). The
-// UI is a renderer over these — adding a new client demo means
-// dropping in one JSON, no UI code changes.
+// Demo profile loader. Profiles live as JSON under src/demos/ and are
+// bundled into the build (bun's import attribute = "json"). The UI is
+// a renderer over these — adding a new client demo means dropping in
+// one JSON, no UI code changes.
+//
+// Schema v2 introduces a `layout` block with named slots that
+// IntegrationCard renders generically. Per-scenario tile stacks
+// replace the v1 `live_query` / `render` ScenarioCard rendering.
 
 import type { RecipeStep } from "./recipe.ts";
+import type { TileSpec } from "../components/IntegrationCard.tsx";
+import type { PropsMap } from "./projection.ts";
 
 import hubspotEmailMonitor from "../demos/hubspot-email-monitor.json" with { type: "json" };
+
+// ─── profile types ─────────────────────────────────────────────────
 
 export interface DemoProfile {
   id: string;
   label: string;
-  /**
-   * Which Apteva instance to talk to. Operator wires the real id at
-   * runtime via window.__APTEVA_APP__.instance_id (config_schema in
-   * apteva.yaml) or via ?instance= URL param. The profile's
-   * `instance_binding` is just a hint for picking when multiple
-   * instances exist.
-   */
+  /** App slug (resolves to a registered MCP server connection). */
+  primary_app: string;
+  /** Hint for picking the right agent instance when several exist. */
   instance_binding?: { kind: "by_name"; name: string };
-  /**
-   * Slug of the primary MCP server this demo runs against. The runner
-   * resolves it to an mcp_servers row id at session start.
-   */
-  primary_mcp: { slug: string };
+  /** Optional per-profile branding/access — Phase 2 (multi-tenant);
+   *  fields are tolerated in JSON today and used by the SPA when
+   *  present. */
+  branding?: BrandingConfig;
+  /** Static props injected into every tile (e.g. portal_id, theme). */
+  context_props?: Record<string, unknown>;
+  /** Layout drives what tiles render where. */
+  layout: Layout;
+  /** Operator controls — trigger buttons + scenario metadata. */
   scenarios: Scenario[];
+  /** Seed + reset recipes — unchanged from v1. */
   seed: { steps: RecipeStep[] };
   reset: { steps: RecipeStep[] };
 }
 
+export interface BrandingConfig {
+  logo?: string;
+  header_label?: string;
+  theme?: "light" | "dark";
+  hide_apteva_chrome?: boolean;
+  theme_css?: string;
+}
+
+export interface Layout {
+  /** Optional full-width tile across the top (typically a pipeline strip
+   *  or KPI dashboard). */
+  header_tile?: TileSpec;
+  /** Customer-state grid — each entry is a stack of cards for one
+   *  scenario. */
+  customer_state: ScenarioGroup[];
+  /** Activity surface below the grid. */
+  activity?: TileSpec;
+}
+
+export interface ScenarioGroup {
+  /** Matches a scenario id so the trigger pulses the right group. */
+  id: string;
+  title: string;
+  severity?: "red" | "amber" | "green";
+  tagline?: string;
+  tiles: TileSpec[];
+}
+
 export interface Scenario {
   id: string;
-  /** Card heading. */
+  /** Trigger button label. */
   company: string;
-  /** Risk badge. */
   severity: "red" | "amber" | "green";
-  /** Subtitle on the card. */
   tagline: string;
-  /**
-   * Live data the card shows. The runner executes this single tool
-   * call every poll interval and renders the JSON response via the
-   * declared `render` paths.
-   */
-  live_query: { tool: string; args: any };
-  /** What to display inside the card from the live query response. */
-  render: {
-    headline: string;       // path into the response JSON
-    detail?: string;
-    badge_count?: string;   // numeric path → shown as "N records"
-  };
-  /**
-   * Single-step recipe that simulates the inbound email for this
-   * scenario. Uses sendEvent on the agent's instance so the agent's
-   * directive picks it up like any other inbound. No real Outlook
-   * traffic involved — that's a separate phase.
-   */
+  /** Single-step recipe that simulates the inbound event. */
   trigger: { message: string };
 }
+
+export type { TileSpec, PropsMap };
+
+// ─── registry ──────────────────────────────────────────────────────
 
 const REGISTRY: Record<string, DemoProfile> = {
   "hubspot-email-monitor": hubspotEmailMonitor as unknown as DemoProfile,

@@ -22,7 +22,17 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-DEST_ROOT="${BUILTIN_APPS_DIR:-/opt/apteva/apps}"
+# Default to a writable per-user location for local dev. The docker
+# image presets BUILTIN_APPS_DIR=/opt/apteva/apps so prod still works.
+DEFAULT_LOCAL_DIR="${HOME}/.apteva/builtin-apps"
+if [[ -z "${BUILTIN_APPS_DIR:-}" ]]; then
+  if [[ -d /opt/apteva/apps && -w /opt/apteva/apps ]]; then
+    BUILTIN_APPS_DIR=/opt/apteva/apps
+  else
+    BUILTIN_APPS_DIR="$DEFAULT_LOCAL_DIR"
+  fi
+fi
+DEST_ROOT="$BUILTIN_APPS_DIR"
 DEST="$DEST_ROOT/demo"
 
 echo "→ Building..."
@@ -34,7 +44,12 @@ rm -rf "$DEST/dist"/*
 cp -r dist/* "$DEST/dist"/
 cp apteva.yaml "$DEST/apteva.yaml"
 
-echo "✓ Installed. Restart apteva-server to pick up the manifest."
-echo "  After restart, the demo app appears in the dashboard's Apps tab"
-echo "  ready to install with one click. Or open /demo/ directly once"
-echo "  the install completes."
+echo
+echo "✓ Installed at $DEST"
+echo
+echo "Run apteva locally so it picks this up:"
+echo
+echo "    BUILTIN_APPS_DIR=$DEST_ROOT $(cd "$(dirname "$0")/../.." && pwd)/apteva/apteva"
+echo
+echo "Then open the dashboard → Apps tab → install \"Demo Runner\","
+echo "or open /demo/ directly once the install completes."

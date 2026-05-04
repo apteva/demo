@@ -1,5 +1,52 @@
-import { $ } from "bun";
+import { $, type BunPlugin } from "bun";
 import { rmSync, mkdirSync } from "fs";
+import { resolve } from "path";
+
+// ─── Workspace package aliases ───
+//
+// The demo bundles components from sibling packages (@apteva/ui-kit,
+// @apteva/integrations) without going through npm-link or workspaces.
+// This plugin rewrites the bare specifiers to absolute paths inside
+// the monorepo. Anything imported transitively (e.g. integrations'
+// hubspot DealCard imports @apteva/ui-kit) resolves through the same
+// rules.
+
+const ROOT = resolve(import.meta.dir, "..");
+
+const ALIASES: Record<string, string> = {
+  "@apteva/ui-kit": resolve(ROOT, "ui-kit/src/index.ts"),
+};
+// Subpath alias: anything under @apteva/integrations/<x> resolves to
+// integrations/src/<x>(.ts|.tsx) — TS-style implicit extensions.
+const SUBPATH_ALIASES: Record<string, string> = {
+  "@apteva/integrations": resolve(ROOT, "integrations/src"),
+};
+
+const aliasPlugin: BunPlugin = {
+  name: "workspace-aliases",
+  setup(build) {
+    // Exact matches
+    for (const [spec, target] of Object.entries(ALIASES)) {
+      const re = new RegExp(`^${spec.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`);
+      build.onResolve({ filter: re }, () => ({ path: target }));
+    }
+    // Subpath matches (e.g. "@apteva/integrations/ui/hubspot/DealCard")
+    for (const [spec, base] of Object.entries(SUBPATH_ALIASES)) {
+      const re = new RegExp(`^${spec.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/(.+)$`);
+      build.onResolve({ filter: re }, (args) => {
+        const m = re.exec(args.path)!;
+        const rel = m[1]!;
+        // Try the path as-given, then with .tsx, .ts, .js, /index.tsx
+        const candidates = [rel, `${rel}.tsx`, `${rel}.ts`, `${rel}.js`, `${rel}/index.tsx`, `${rel}/index.ts`];
+        for (const c of candidates) {
+          const full = resolve(base, c);
+          if (Bun.file(full).size > 0) return { path: full };
+        }
+        return { path: resolve(base, rel) };
+      });
+    }
+  },
+};
 
 rmSync("./dist", { recursive: true, force: true });
 mkdirSync("./dist", { recursive: true });
@@ -30,6 +77,7 @@ const result = await Bun.build({
     chunk: "[name]-[hash].[ext]",
     asset: "[name]-[hash].[ext]",
   },
+  plugins: [aliasPlugin],
 });
 
 if (!result.success) {

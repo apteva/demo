@@ -1,3 +1,7 @@
 node_modules/
 *.log
 .DS_Store
+# Bundler output — `bun run build` regenerates this; the embed
+# pipeline (apteva-server's Dockerfile / scripts/build-local.sh) reads
+# from a fresh build, never from a committed dist.
+dist/

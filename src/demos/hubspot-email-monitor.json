@@ -1,77 +1,216 @@
 {
   "id": "hubspot-email-monitor",
   "label": "HubSpot · Email-monitoring agent",
-  "primary_mcp": { "slug": "hubspot" },
+  "primary_app": "hubspot",
   "instance_binding": { "kind": "by_name", "name": "Email Monitor Demo" },
+
+  "branding": {
+    "header_label": "HubSpot · Email-monitoring agent",
+    "theme": "light"
+  },
+
+  "context_props": {
+    "portal_id": "0"
+  },
+
+  "layout": {
+    "header_tile": {
+      "component": "pipeline-strip",
+      "static_props": {
+        "pipeline_label": "Sales pipeline",
+        "pipeline": "default",
+        "preview": true
+      }
+    },
+
+    "customer_state": [
+      {
+        "id": "acme-churn",
+        "title": "Acme Logistics",
+        "severity": "red",
+        "tagline": "Churn risk · contract-sent renewal · open HIGH ticket",
+        "tiles": [
+          {
+            "component": "deal-card",
+            "fetch": {
+              "tool": "search_crm_objects",
+              "args": {
+                "objectType": "deals",
+                "limit": 1,
+                "filterGroups": [{ "filters": [{ "propertyName": "dealname", "operator": "CONTAINS_TOKEN", "value": "Acme" }] }],
+                "properties": ["dealname", "amount", "dealstage", "closedate", "pipeline"]
+              }
+            },
+            "props_from_result": {
+              "deal_id":   "results[0].id",
+              "dealname":  "results[0].properties.dealname",
+              "amount":    "results[0].properties.amount",
+              "dealstage": "results[0].properties.dealstage",
+              "pipeline":  "results[0].properties.pipeline",
+              "closedate": "results[0].properties.closedate"
+            },
+            "static_props": { "company_name": "Acme Logistics", "company_domain": "acme-logistics.com" }
+          },
+          {
+            "component": "ticket-card",
+            "fetch": {
+              "tool": "search_crm_objects",
+              "args": {
+                "objectType": "tickets",
+                "limit": 1,
+                "filterGroups": [{ "filters": [{ "propertyName": "subject", "operator": "CONTAINS_TOKEN", "value": "Slow API" }] }],
+                "properties": ["subject", "content", "hs_ticket_priority", "hs_pipeline_stage", "createdate", "hs_lastmodifieddate"]
+              }
+            },
+            "props_from_result": {
+              "ticket_id":           "results[0].id",
+              "subject":             "results[0].properties.subject",
+              "content":             "results[0].properties.content",
+              "hs_ticket_priority":  "results[0].properties.hs_ticket_priority",
+              "hs_pipeline_stage":   "results[0].properties.hs_pipeline_stage",
+              "createdate":          "results[0].properties.createdate",
+              "hs_lastmodifieddate": "results[0].properties.hs_lastmodifieddate"
+            },
+            "static_props": { "company_name": "Acme Logistics", "company_domain": "acme-logistics.com" }
+          }
+        ]
+      },
+
+      {
+        "id": "globex-cold",
+        "title": "Globex Innovations",
+        "severity": "amber",
+        "tagline": "Cold lead · pilot stalled · push to next quarter",
+        "tiles": [
+          {
+            "component": "deal-card",
+            "fetch": {
+              "tool": "search_crm_objects",
+              "args": {
+                "objectType": "deals",
+                "limit": 1,
+                "filterGroups": [{ "filters": [{ "propertyName": "dealname", "operator": "CONTAINS_TOKEN", "value": "Globex" }] }],
+                "properties": ["dealname", "amount", "dealstage", "closedate", "pipeline"]
+              }
+            },
+            "props_from_result": {
+              "deal_id":   "results[0].id",
+              "dealname":  "results[0].properties.dealname",
+              "amount":    "results[0].properties.amount",
+              "dealstage": "results[0].properties.dealstage",
+              "pipeline":  "results[0].properties.pipeline",
+              "closedate": "results[0].properties.closedate"
+            },
+            "static_props": { "company_name": "Globex Innovations", "company_domain": "globex-innovations.com" }
+          },
+          {
+            "component": "contact-card",
+            "fetch": {
+              "tool": "search_crm_objects",
+              "args": {
+                "objectType": "contacts",
+                "limit": 1,
+                "filterGroups": [{ "filters": [{ "propertyName": "email", "operator": "EQ", "value": "david.park@globex-innovations.com" }] }],
+                "properties": ["firstname", "lastname", "email", "phone", "jobtitle", "lifecyclestage"]
+              }
+            },
+            "props_from_result": {
+              "contact_id":     "results[0].id",
+              "firstname":      "results[0].properties.firstname",
+              "lastname":       "results[0].properties.lastname",
+              "email":          "results[0].properties.email",
+              "phone":          "results[0].properties.phone",
+              "jobtitle":       "results[0].properties.jobtitle",
+              "lifecyclestage": "results[0].properties.lifecyclestage"
+            },
+            "static_props": { "company_name": "Globex Innovations", "company_domain": "globex-innovations.com" }
+          }
+        ]
+      },
+
+      {
+        "id": "initech-conflict",
+        "title": "Initech Corp",
+        "severity": "amber",
+        "tagline": "Pricing conflict · $120k decision-maker bought-in · committee deadline",
+        "tiles": [
+          {
+            "component": "deal-card",
+            "fetch": {
+              "tool": "search_crm_objects",
+              "args": {
+                "objectType": "deals",
+                "limit": 1,
+                "filterGroups": [{ "filters": [{ "propertyName": "dealname", "operator": "CONTAINS_TOKEN", "value": "Initech" }] }],
+                "properties": ["dealname", "amount", "dealstage", "closedate", "pipeline"]
+              }
+            },
+            "props_from_result": {
+              "deal_id":   "results[0].id",
+              "dealname":  "results[0].properties.dealname",
+              "amount":    "results[0].properties.amount",
+              "dealstage": "results[0].properties.dealstage",
+              "pipeline":  "results[0].properties.pipeline",
+              "closedate": "results[0].properties.closedate"
+            },
+            "static_props": { "company_name": "Initech Corp", "company_domain": "initech-corp.com" }
+          },
+          {
+            "component": "ticket-card",
+            "fetch": {
+              "tool": "search_crm_objects",
+              "args": {
+                "objectType": "tickets",
+                "limit": 1,
+                "filterGroups": [{ "filters": [{ "propertyName": "subject", "operator": "CONTAINS_TOKEN", "value": "quote clarification" }] }],
+                "properties": ["subject", "content", "hs_ticket_priority", "hs_pipeline_stage", "createdate", "hs_lastmodifieddate"]
+              }
+            },
+            "props_from_result": {
+              "ticket_id":           "results[0].id",
+              "subject":             "results[0].properties.subject",
+              "content":             "results[0].properties.content",
+              "hs_ticket_priority":  "results[0].properties.hs_ticket_priority",
+              "hs_pipeline_stage":   "results[0].properties.hs_pipeline_stage",
+              "createdate":          "results[0].properties.createdate",
+              "hs_lastmodifieddate": "results[0].properties.hs_lastmodifieddate"
+            },
+            "static_props": { "company_name": "Initech Corp", "company_domain": "initech-corp.com" }
+          }
+        ]
+      }
+    ],
+
+    "activity": {
+      "component": "activity-feed",
+      "static_props": { "preview": true }
+    }
+  },
 
   "scenarios": [
     {
       "id": "acme-churn",
       "company": "Acme Logistics",
       "severity": "red",
-      "tagline": "Churn risk · Contract-Sent deal at $48k closes in 7 days · Open HIGH-priority ticket",
-      "live_query": {
-        "tool": "search_crm_objects",
-        "args": {
-          "objectType": "deals",
-          "limit": 1,
-          "filterGroups": [{ "filters": [{ "propertyName": "dealname", "operator": "CONTAINS_TOKEN", "value": "Acme" }] }],
-          "properties": ["dealname", "amount", "dealstage", "closedate"]
-        }
-      },
-      "render": {
-        "headline": "results[0].properties.dealname",
-        "detail": "results[0].properties.amount",
-        "badge_count": "total"
-      },
+      "tagline": "Churn risk · contract-sent renewal · open HIGH ticket",
       "trigger": {
         "message": "INBOUND EMAIL — pretend the following just arrived in the connected mailbox and process it per your directive:\n\nFrom: sarah.chen@acme-logistics.com\nTo: marc-olivier@apteva.local\nSubject: This is the third time I'm asking — board review tomorrow\n\nMarco,\n\nWe're 36 hours away from our board review. The API performance issue is now in the deck. I have not heard a thing back since you said the team was on it five days ago. If we don't have a concrete fix or a written plan by EOD, I'm pulling the renewal off the agenda and we'll evaluate alternatives in Q1.\n\nThis is not what I want. Please call me.\n\nSarah"
       }
     },
-
     {
       "id": "globex-cold",
       "company": "Globex Innovations",
       "severity": "amber",
-      "tagline": "Lost lead · $24k pilot · went silent after demo, kickoff cancelled",
-      "live_query": {
-        "tool": "search_crm_objects",
-        "args": {
-          "objectType": "deals",
-          "limit": 1,
-          "filterGroups": [{ "filters": [{ "propertyName": "dealname", "operator": "CONTAINS_TOKEN", "value": "Globex" }] }],
-          "properties": ["dealname", "amount", "dealstage", "closedate"]
-        }
-      },
-      "render": {
-        "headline": "results[0].properties.dealname",
-        "detail": "results[0].properties.amount",
-        "badge_count": "total"
-      },
+      "tagline": "Cold lead · pilot stalled",
       "trigger": {
         "message": "INBOUND EMAIL — pretend the following just arrived in the connected mailbox and process it per your directive:\n\nFrom: david.park@globex-innovations.com\nTo: marc-olivier@apteva.local\nSubject: Globex pilot — we need to push to next quarter\n\nHi Marco,\n\nApologies for the radio silence. We've had to deprioritize new initiatives until the security review wraps up internally. Let's plan to revisit the pilot in Q1. I'll reach back out then.\n\nThanks,\nDavid"
       }
     },
-
     {
       "id": "initech-conflict",
       "company": "Initech Corp",
       "severity": "amber",
-      "tagline": "Internal pricing conflict · $120k Decision-Maker-Bought-In deal · committee deadline",
-      "live_query": {
-        "tool": "search_crm_objects",
-        "args": {
-          "objectType": "deals",
-          "limit": 1,
-          "filterGroups": [{ "filters": [{ "propertyName": "dealname", "operator": "CONTAINS_TOKEN", "value": "Initech" }] }],
-          "properties": ["dealname", "amount", "dealstage", "closedate"]
-        }
-      },
-      "render": {
-        "headline": "results[0].properties.dealname",
-        "detail": "results[0].properties.amount",
-        "badge_count": "total"
-      },
+      "tagline": "Pricing conflict · committee deadline",
       "trigger": {
         "message": "INBOUND EMAIL — pretend the following just arrived in the connected mailbox and process it per your directive:\n\nFrom: lisa.rodriguez@initech-corp.com\nTo: marc-olivier@apteva.local\nSubject: Re: Pricing — final ask before committee\n\nMarco,\n\nI'm now in receipt of three different per-seat numbers from your team. Last call yesterday I confirmed $200; this morning's signed proposal said $250; and a different colleague just emailed $225 in a footnote.\n\nI cannot bring this to committee tomorrow without one consistent number in writing, on company letterhead, owned by one named person. If I don't have that by 6pm, the decision goes to next quarter and I'll tell my CFO we couldn't get a straight answer.\n\nLisa"
       }

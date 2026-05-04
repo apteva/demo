@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { ScenarioCard } from "../components/ScenarioCard.tsx";
 import { ControlRail } from "../components/ControlRail.tsx";
-import { ActivityStrip } from "../components/ActivityStrip.tsx";
 import { ChatDock } from "../components/ChatDock.tsx";
 import { SeedProgress } from "../components/SeedProgress.tsx";
+import { IntegrationCard } from "../components/IntegrationCard.tsx";
 import { defaultProfileId, getProfile, listProfiles } from "../lib/profiles.ts";
 import { runRecipe, type StepProgress } from "../lib/recipe.ts";
 import { listMCPServers } from "../api/mcp.ts";
@@ -15,9 +14,17 @@ interface Props {
   projectId: string | null;
 }
 
+const SEVERITY_BAR: Record<"red" | "amber" | "green", string> = {
+  red:   "bg-red",
+  amber: "bg-orange",
+  green: "bg-green",
+};
+
 /**
- * The one screen. Two columns: state board + recent activity on the
- * left, control rail on the right. Floating chat dock at bottom right.
+ * The one screen. Header tile across the top, customer-state grid +
+ * activity strip on the left, control rail on the right. Everything
+ * below the header is rendered generically from the profile's
+ * `layout` block via IntegrationCard.
  */
 export function Demo({ instanceId: forcedInstanceId, projectId }: Props) {
   const [profileId, setProfileId] = useState<string>(() => defaultProfileId());
@@ -55,7 +62,7 @@ export function Demo({ instanceId: forcedInstanceId, projectId }: Props) {
     return () => { cancelled = true; };
   }, [forcedInstanceId, projectId, profile.instance_binding?.kind, profile.instance_binding?.name]);
 
-  // Resolve the primary MCP server id for this profile (by slug).
+  // Resolve the primary MCP server id for this profile (by app slug).
   const [primaryMcpId, setPrimaryMcpId] = useState<number | null>(null);
   const [mcpStatus, setMcpStatus] = useState<string>("loading…");
 
@@ -64,32 +71,25 @@ export function Demo({ instanceId: forcedInstanceId, projectId }: Props) {
     (async () => {
       try {
         const all = await listMCPServers();
-        const target = all.find((s) => s.name === profile.primary_mcp.slug);
+        const target = all.find((s) => s.name === profile.primary_app);
         if (cancelled) return;
         if (!target) {
           setPrimaryMcpId(null);
-          setMcpStatus(`no MCP server named "${profile.primary_mcp.slug}"`);
+          setMcpStatus(`no MCP server named "${profile.primary_app}"`);
         } else {
           setPrimaryMcpId(target.id);
           setMcpStatus(target.status);
         }
-      } catch (e: any) {
+      } catch {
         if (!cancelled) setMcpStatus("error");
       }
     })();
-  }, [profile.primary_mcp.slug]);
+  }, [profile.primary_app]);
 
-  // Pulse logic — when a tool.call fires, briefly pulse the matching card.
+  // Pulse logic — when a scenario is triggered, briefly pulse the
+  // matching group. (We also pulse on agent tool-call events; that
+  // wiring re-enables once ActivityStrip is restored as a tile.)
   const [pulseId, setPulseId] = useState<string | null>(null);
-  const onToolCall = useCallback((ev: any) => {
-    const args = ev?.data?.args ?? {};
-    const text = JSON.stringify(args);
-    const hit = profile.scenarios.find((s) => text.includes(s.company.split(" ")[0]!));
-    if (hit) {
-      setPulseId(hit.id);
-      setTimeout(() => setPulseId(null), 8000);
-    }
-  }, [profile.scenarios]);
 
   // ─── recipe runner UI state ───
   const [busy, setBusy] = useState(false);
@@ -101,7 +101,7 @@ export function Demo({ instanceId: forcedInstanceId, projectId }: Props) {
 
   const runOne = useCallback(async (title: string, steps: any[]) => {
     if (!primaryMcpId) {
-      alert("Primary MCP server not resolved — check that " + profile.primary_mcp.slug + " is connected.");
+      alert("Primary MCP server not resolved — check that " + profile.primary_app + " is connected.");
       return;
     }
     setBusy(true);
@@ -120,7 +120,7 @@ export function Demo({ instanceId: forcedInstanceId, projectId }: Props) {
       setProgressDone(true);
       setBusy(false);
     }
-  }, [primaryMcpId, profile.primary_mcp.slug]);
+  }, [primaryMcpId, profile.primary_app]);
 
   const onSeed = useCallback(() => runOne("Seeding demo data…", profile.seed.steps), [profile.seed.steps, runOne]);
   const onReset = useCallback(() => runOne("Finding demo records…", profile.reset.steps), [profile.reset.steps, runOne]);
@@ -133,6 +133,8 @@ export function Demo({ instanceId: forcedInstanceId, projectId }: Props) {
     const sc = profile.scenarios.find((s) => s.id === scenarioId);
     if (!sc) return;
     setBusy(true);
+    setPulseId(scenarioId);
+    setTimeout(() => setPulseId(null), 8000);
     try {
       await sendEvent(instanceId, sc.trigger.message);
     } catch (e: any) {
@@ -160,11 +162,15 @@ export function Demo({ instanceId: forcedInstanceId, projectId }: Props) {
     }
   }, [instanceId, instance]);
 
+  const layout = profile.layout;
+  const headerLabel = profile.branding?.header_label ?? profile.label;
+  const ctxProps = profile.context_props;
+
   return (
     <div className="min-h-dvh px-4 py-4">
       <header className="max-w-7xl mx-auto mb-4 flex items-baseline justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-lg font-semibold t-primary">{profile.label}</h1>
+          <h1 className="text-lg font-semibold t-primary">{headerLabel}</h1>
           <div className="text-xs t-tertiary flex gap-3 mt-0.5">
             <span>
               {instanceLoading
@@ -174,32 +180,69 @@ export function Demo({ instanceId: forcedInstanceId, projectId }: Props) {
                 : "no agent bound"}
             </span>
             <span>·</span>
-            <span>MCP: {profile.primary_mcp.slug} ({mcpStatus})</span>
+            <span>App: {profile.primary_app} ({mcpStatus})</span>
             {primaryMcpId && <span>· id={primaryMcpId}</span>}
           </div>
         </div>
       </header>
+
+      {layout.header_tile && (
+        <div className="max-w-7xl mx-auto mb-4">
+          <IntegrationCard
+            spec={layout.header_tile}
+            appSlug={profile.primary_app}
+            serverId={primaryMcpId}
+            contextProps={ctxProps}
+          />
+        </div>
+      )}
 
       <div className="max-w-7xl mx-auto flex gap-4 items-start">
         <main className="flex-1 min-w-0 space-y-4">
           <section>
             <h2 className="text-[11px] uppercase tracking-wide t-tertiary mb-2">Customer state</h2>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {profile.scenarios.map((s) => (
-                <ScenarioCard
-                  key={s.id}
-                  scenario={s}
-                  serverId={primaryMcpId ?? 0}
-                  pulse={pulseId === s.id}
-                />
+              {layout.customer_state.map((group) => (
+                <div
+                  key={group.id}
+                  className={`relative rounded-lg p-3 glass space-y-2 ${pulseId === group.id ? "ring-2 ring-accent/60" : ""}`}
+                >
+                  <div className="flex items-center gap-2">
+                    {group.severity && (
+                      <span className={`w-1.5 h-1.5 rounded-full ${SEVERITY_BAR[group.severity]}`} />
+                    )}
+                    <h3 className="text-sm font-semibold t-primary truncate">{group.title}</h3>
+                  </div>
+                  {group.tagline && (
+                    <p className="text-[11px] t-tertiary leading-snug">{group.tagline}</p>
+                  )}
+                  <div className="flex flex-col gap-2 pt-1">
+                    {group.tiles.map((tile, i) => (
+                      <IntegrationCard
+                        key={i}
+                        spec={tile}
+                        appSlug={profile.primary_app}
+                        serverId={primaryMcpId}
+                        contextProps={ctxProps}
+                      />
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </section>
 
-          <section className="glass rounded-2xl p-4">
-            <h2 className="text-[11px] uppercase tracking-wide t-tertiary mb-2">Recent agent activity</h2>
-            <ActivityStrip instanceId={instanceId} onToolCall={onToolCall} />
-          </section>
+          {layout.activity && (
+            <section>
+              <h2 className="text-[11px] uppercase tracking-wide t-tertiary mb-2">Recent activity</h2>
+              <IntegrationCard
+                spec={layout.activity}
+                appSlug={profile.primary_app}
+                serverId={primaryMcpId}
+                contextProps={ctxProps}
+              />
+            </section>
+          )}
         </main>
 
         <ControlRail
@@ -224,7 +267,6 @@ export function Demo({ instanceId: forcedInstanceId, projectId }: Props) {
           onClose={() => setProgressOpen(false)}
           onRetry={() => {
             setProgressOpen(false);
-            // Re-run whatever was last triggered. Caller picks via the rail.
           }}
         />
       )}
