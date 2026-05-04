@@ -5,3 +5,6 @@ node_modules/
 # pipeline (apteva-server's Dockerfile / scripts/build-local.sh) reads
 # from a fresh build, never from a committed dist.
 dist/
+# Release tarballs — built by CI per release and uploaded as GitHub
+# release assets. Never committed.
+release/

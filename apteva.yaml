@@ -2,7 +2,7 @@ schema: apteva-app/v1
 
 name: demo
 display_name: Demo Runner
-version: 0.1.0
+version: 0.1.1
 description: |
   Client-facing demo runner for Apteva agents. One screen showing
   business-state cards (companies, deals, tickets, recent emails)
@@ -38,10 +38,13 @@ provides:
 
 runtime:
   kind: static
+  # The release tarball preserves the dist/ prefix (`tar -czf foo.tgz dist`),
+  # and the local-drop install script copies dist/ alongside apteva.yaml.
+  # Same value works for both install pathways.
   static_dir: dist
-  source:
-    repo: github.com/apteva/demo
-    ref: main
+  bundle:
+    url: https://github.com/apteva/demo/releases/download/v0.1.1/demo-0.1.1.tgz
+    sha256: ba06e6575ea36b7f487de34942653135134e1abc6257025dcf64bd94a91f2eeb
 
 config_schema:
   - name: mount_path

@@ -12,9 +12,22 @@ import { resolve } from "path";
 // rules.
 
 const ROOT = resolve(import.meta.dir, "..");
+const DEMO_NODE_MODULES = resolve(import.meta.dir, "node_modules");
 
+// React / react-dom must resolve from demo's own node_modules, not
+// from the sibling repos we alias into. ui-kit/ and integrations/
+// don't keep their own node_modules (the workspace has no top-level
+// one either), so Bun would otherwise fail to find react when it
+// walks up from ui-kit/src/*.tsx. Pinning these here keeps a single
+// React copy in the bundle and matches the importmap pattern the
+// dashboard uses for runtime UI panels.
 const ALIASES: Record<string, string> = {
   "@apteva/ui-kit": resolve(ROOT, "ui-kit/src/index.ts"),
+  "react": resolve(DEMO_NODE_MODULES, "react/index.js"),
+  "react/jsx-runtime": resolve(DEMO_NODE_MODULES, "react/jsx-runtime.js"),
+  "react/jsx-dev-runtime": resolve(DEMO_NODE_MODULES, "react/jsx-dev-runtime.js"),
+  "react-dom": resolve(DEMO_NODE_MODULES, "react-dom/index.js"),
+  "react-dom/client": resolve(DEMO_NODE_MODULES, "react-dom/client.js"),
 };
 // Subpath alias: anything under @apteva/integrations/<x> resolves to
 // integrations/src/<x>(.ts|.tsx) — TS-style implicit extensions.
