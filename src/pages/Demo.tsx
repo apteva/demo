@@ -21,10 +21,17 @@ const SEVERITY_BAR: Record<"red" | "amber" | "green", string> = {
 };
 
 /**
- * The one screen. Header tile across the top, customer-state grid +
- * activity strip on the left, control rail on the right. Everything
- * below the header is rendered generically from the profile's
- * `layout` block via IntegrationCard.
+ * The one screen.
+ *
+ * Two zones, side-by-side:
+ *   - Left rail (340px): the AGENT — its state, live activity, the
+ *     scripted-scenario triggers, and seed/reset.
+ *   - Right column (fluid): the INTEGRATION VIEW — pipeline strip,
+ *     customer-state cards, recent CRM activity. Each major block is
+ *     a glass card so the visual rhythm is consistent.
+ *
+ * Header carries title, profile picker, and a one-line status string.
+ * Floating chat dock pinned bottom-right by ChatDock itself.
  */
 export function Demo({ instanceId: forcedInstanceId, projectId }: Props) {
   const [profileId, setProfileId] = useState<string>(() => defaultProfileId());
@@ -75,7 +82,7 @@ export function Demo({ instanceId: forcedInstanceId, projectId }: Props) {
         if (cancelled) return;
         if (!target) {
           setPrimaryMcpId(null);
-          setMcpStatus(`no MCP server named "${profile.primary_app}"`);
+          setMcpStatus(`no "${profile.primary_app}" server`);
         } else {
           setPrimaryMcpId(target.id);
           setMcpStatus(target.status);
@@ -86,9 +93,6 @@ export function Demo({ instanceId: forcedInstanceId, projectId }: Props) {
     })();
   }, [profile.primary_app]);
 
-  // Pulse logic — when a scenario is triggered, briefly pulse the
-  // matching group. (We also pulse on agent tool-call events; that
-  // wiring re-enables once ActivityStrip is restored as a tile.)
   const [pulseId, setPulseId] = useState<string | null>(null);
 
   // ─── recipe runner UI state ───
@@ -166,50 +170,90 @@ export function Demo({ instanceId: forcedInstanceId, projectId }: Props) {
   const headerLabel = profile.branding?.header_label ?? profile.label;
   const ctxProps = profile.context_props;
 
+  const agentStatus =
+    instanceLoading ? "loading"
+    : !instance ? "not bound"
+    : instance.status;
+
   return (
     <div className="min-h-dvh px-4 py-4">
-      <header className="max-w-7xl mx-auto mb-4 flex items-baseline justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-lg font-semibold t-primary">{headerLabel}</h1>
-          <div className="text-xs t-tertiary flex gap-3 mt-0.5">
-            <span>
-              {instanceLoading
-                ? "resolving instance…"
-                : instance
-                ? `Agent: ${instance.name} (${instance.status})`
-                : "no agent bound"}
-            </span>
-            <span>·</span>
-            <span>App: {profile.primary_app} ({mcpStatus})</span>
-            {primaryMcpId && <span>· id={primaryMcpId}</span>}
+      {/* ── Header ── */}
+      <header className="max-w-7xl mx-auto mb-4">
+        <div className="glass rounded-xl px-4 py-3 flex items-center gap-4 flex-wrap">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-base font-semibold t-primary truncate">{headerLabel}</h1>
+            <div className="text-[11px] t-tertiary truncate flex items-center gap-2">
+              <span className={`w-1.5 h-1.5 rounded-full ${
+                instance?.status === "running" ? "bg-green"
+                : instance ? "bg-orange"
+                : "bg-text-dim"
+              }`} />
+              <span>
+                {instanceLoading ? "resolving…"
+                  : instance ? `${instance.name} · ${instance.status}`
+                  : "no agent bound"}
+              </span>
+              <span>·</span>
+              <span>{profile.primary_app}: {mcpStatus}</span>
+            </div>
           </div>
+          {profiles.length > 1 && (
+            <div className="flex items-center gap-2">
+              <label className="text-[10px] uppercase tracking-wider t-tertiary">Profile</label>
+              <select
+                value={profile.id}
+                onChange={(e) => setProfileId(e.target.value)}
+                className="text-sm rounded-lg glass-inset px-2 py-1.5 t-primary border border-border"
+              >
+                {profiles.map((p) => (
+                  <option key={p.id} value={p.id}>{p.label}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </header>
 
-      {layout.header_tile && (
-        <div className="max-w-7xl mx-auto mb-4">
-          <IntegrationCard
-            spec={layout.header_tile}
-            appSlug={profile.primary_app}
-            serverId={primaryMcpId}
-            contextProps={ctxProps}
-          />
-        </div>
-      )}
-
+      {/* ── Two-zone body ── */}
       <div className="max-w-7xl mx-auto flex gap-4 items-start">
+        <ControlRail
+          profile={profile}
+          agentRunning={instance?.status === "running"}
+          agentName={instance?.name ?? null}
+          agentStatus={agentStatus}
+          mcpStatus={mcpStatus}
+          instanceId={instanceId}
+          busy={busy}
+          onSeed={onSeed}
+          onReset={onReset}
+          onTrigger={onTrigger}
+          onPauseToggle={onPauseToggle}
+        />
+
         <main className="flex-1 min-w-0 space-y-4">
-          <section>
-            <h2 className="text-[11px] uppercase tracking-wide t-tertiary mb-2">Customer state</h2>
+          {layout.header_tile && (
+            <Section label="Pipeline">
+              <IntegrationCard
+                spec={layout.header_tile}
+                appSlug={profile.primary_app}
+                serverId={primaryMcpId}
+                contextProps={ctxProps}
+              />
+            </Section>
+          )}
+
+          <Section label="Customer state">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {layout.customer_state.map((group) => (
                 <div
                   key={group.id}
-                  className={`relative rounded-lg p-3 glass space-y-2 ${pulseId === group.id ? "ring-2 ring-accent/60" : ""}`}
+                  className={`relative rounded-xl p-3 glass-inset border border-border space-y-2 transition-shadow ${
+                    pulseId === group.id ? "ring-2 ring-accent/60" : ""
+                  }`}
                 >
                   <div className="flex items-center gap-2">
                     {group.severity && (
-                      <span className={`w-1.5 h-1.5 rounded-full ${SEVERITY_BAR[group.severity]}`} />
+                      <span className={`w-1.5 h-1.5 rounded-full ${SEVERITY_BAR[group.severity]} shrink-0`} />
                     )}
                     <h3 className="text-sm font-semibold t-primary truncate">{group.title}</h3>
                   </div>
@@ -230,32 +274,19 @@ export function Demo({ instanceId: forcedInstanceId, projectId }: Props) {
                 </div>
               ))}
             </div>
-          </section>
+          </Section>
 
           {layout.activity && (
-            <section>
-              <h2 className="text-[11px] uppercase tracking-wide t-tertiary mb-2">Recent activity</h2>
+            <Section label="Recent CRM activity">
               <IntegrationCard
                 spec={layout.activity}
                 appSlug={profile.primary_app}
                 serverId={primaryMcpId}
                 contextProps={ctxProps}
               />
-            </section>
+            </Section>
           )}
         </main>
-
-        <ControlRail
-          profile={profile}
-          profiles={profiles}
-          agentRunning={instance?.status === "running"}
-          busy={busy}
-          onProfileChange={setProfileId}
-          onSeed={onSeed}
-          onReset={onReset}
-          onTrigger={onTrigger}
-          onPauseToggle={onPauseToggle}
-        />
       </div>
 
       {progressOpen && (
@@ -265,13 +296,25 @@ export function Demo({ instanceId: forcedInstanceId, projectId }: Props) {
           done={progressDone}
           error={progressError}
           onClose={() => setProgressOpen(false)}
-          onRetry={() => {
-            setProgressOpen(false);
-          }}
+          onRetry={() => setProgressOpen(false)}
         />
       )}
 
       <ChatDock instanceId={instanceId} />
     </div>
+  );
+}
+
+// Section — glass-card wrapper with a tiny uppercase label above. The
+// label sits *outside* the card so the card itself stays clean and
+// matches the design system's "section header → card body" rhythm.
+function Section({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <section>
+      <h2 className="text-[10px] uppercase tracking-wider t-tertiary font-medium mb-1.5 px-1">
+        {label}
+      </h2>
+      <div className="glass rounded-xl p-3">{children}</div>
+    </section>
   );
 }

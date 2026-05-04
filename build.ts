@@ -111,11 +111,11 @@ const html = `<!DOCTYPE html>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/${jsFile}"></script>
+    <script type="module" src="./${jsFile}"></script>
   </body>
 </html>`;
 

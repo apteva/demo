@@ -2,7 +2,7 @@ schema: apteva-app/v1
 
 name: demo
 display_name: Demo Runner
-version: 0.1.1
+version: 0.1.2
 description: |
   Client-facing demo runner for Apteva agents. One screen showing
   business-state cards (companies, deals, tickets, recent emails)
@@ -43,8 +43,8 @@ runtime:
   # Same value works for both install pathways.
   static_dir: dist
   bundle:
-    url: https://github.com/apteva/demo/releases/download/v0.1.1/demo-0.1.1.tgz
-    sha256: ba06e6575ea36b7f487de34942653135134e1abc6257025dcf64bd94a91f2eeb
+    url: https://github.com/apteva/demo/releases/download/v0.1.2/demo-0.1.2.tgz
+    sha256: bdc2c3d073a5733f89f9a1c330894b225736ed6ea418afac57a538f70a733e67
 
 config_schema:
   - name: mount_path
