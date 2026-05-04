@@ -231,18 +231,29 @@ export function Demo({ instanceId: forcedInstanceId, projectId }: Props) {
         />
 
         <main className="flex-1 min-w-0 space-y-4">
+          {/* Top-level integration tiles render as their own cards
+              (PipelineStrip, ActivityFeed wrap in @apteva/ui-kit's
+              Card with their own CardHeader). No outer wrapper —
+              would just nest a card inside a card with duplicate
+              titles. */}
           {layout.header_tile && (
-            <Section label="Pipeline">
-              <IntegrationCard
-                spec={layout.header_tile}
-                appSlug={profile.primary_app}
-                serverId={primaryMcpId}
-                contextProps={ctxProps}
-              />
-            </Section>
+            <IntegrationCard
+              spec={layout.header_tile}
+              appSlug={profile.primary_app}
+              serverId={primaryMcpId}
+              contextProps={ctxProps}
+            />
           )}
 
-          <Section label="Customer state">
+          {/* Customer-state groups DO get an outer panel because each
+              group contains multiple inner cards (a deal + a ticket +
+              a contact). The wrapper is a "scenario" container with a
+              title + severity dot + tagline — that's content the
+              individual cards can't carry. */}
+          <section>
+            <h2 className="text-[10px] uppercase tracking-wider t-tertiary font-medium mb-1.5 px-1">
+              Customer state
+            </h2>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {layout.customer_state.map((group) => (
                 <div
@@ -274,17 +285,15 @@ export function Demo({ instanceId: forcedInstanceId, projectId }: Props) {
                 </div>
               ))}
             </div>
-          </Section>
+          </section>
 
           {layout.activity && (
-            <Section label="Recent CRM activity">
-              <IntegrationCard
-                spec={layout.activity}
-                appSlug={profile.primary_app}
-                serverId={primaryMcpId}
-                contextProps={ctxProps}
-              />
-            </Section>
+            <IntegrationCard
+              spec={layout.activity}
+              appSlug={profile.primary_app}
+              serverId={primaryMcpId}
+              contextProps={ctxProps}
+            />
           )}
         </main>
       </div>
@@ -305,16 +314,3 @@ export function Demo({ instanceId: forcedInstanceId, projectId }: Props) {
   );
 }
 
-// Section — glass-card wrapper with a tiny uppercase label above. The
-// label sits *outside* the card so the card itself stays clean and
-// matches the design system's "section header → card body" rhythm.
-function Section({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <section>
-      <h2 className="text-[10px] uppercase tracking-wider t-tertiary font-medium mb-1.5 px-1">
-        {label}
-      </h2>
-      <div className="glass rounded-xl p-3">{children}</div>
-    </section>
-  );
-}
