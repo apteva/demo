@@ -216,11 +216,11 @@ function summarizeResult(data: any): string {
   if (!data || typeof data !== "object") return "";
   if ("createResults" in data) {
     const s = data.createResults?.summary;
-    if (s) return `${s.created ?? s.totalSucceeded ?? "?"} created`;
+    if (s) return `${s.created ?? s.totalSucceeded ?? "? "} created`;
   }
   if ("updateResults" in data) {
     const s = data.updateResults?.summary;
-    if (s) return `${s.updated ?? s.totalSucceeded ?? "?"} updated`;
+    if (s) return `${s.updated ?? s.totalSucceeded ?? "? "} updated`;
   }
   if ("results" in data && Array.isArray(data.results)) {
     return `${data.total ?? data.results.length} found`;
